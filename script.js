@@ -130,13 +130,9 @@ contactForm?.addEventListener('submit', async (event) => {
 
     const data = await response.json();
 
-  if (!response.ok) {
-  const errorData = await response.json();
-
-  console.log("Resend Response:", errorData);
-
-  throw new Error(JSON.stringify(errorData));
-}
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to send payload to microservice");
+    }
 
     // Success state
     contactForm.reset();
@@ -146,13 +142,12 @@ contactForm?.addEventListener('submit', async (event) => {
     }
 
   } catch (error) {
-  console.error("Full Error:", error);
-
-  return res.status(500).json({
-    error: error.message,
-    stack: process.env.NODE_ENV === "development" ? error.stack : undefined
-  });
-}
+    // Error state
+    console.error('Microservice Error:', error);
+    if (formStatus) {
+      formStatus.textContent = "Unable to send right now. Please use the email link above.";
+      formStatus.style.color = '#f44336'; // Red error text
+    }
   } finally {
     // This ALWAYS runs, ensuring the button resets whether it succeeded or failed
     if (formSubmitButton) {
