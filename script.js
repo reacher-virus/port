@@ -85,15 +85,14 @@ copyButton?.addEventListener('click', async () => {
   }, 2200);
 });
 
-// --- UPDATED CONTACT FORM LOGIC ---
-// --- UPDATED CONTACT FORM LOGIC ---
+// --- CONTACT FORM LOGIC ---
 const contactForm = document.querySelector('[data-contact-form]');
 const formSubmitButton = contactForm?.querySelector('.form-submit');
 const formStatus = contactForm?.querySelector('.form-status');
 
 contactForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
-  
+
   if (!contactForm.checkValidity()) {
     contactForm.reportValidity();
     return;
@@ -104,60 +103,62 @@ contactForm?.addEventListener('submit', async (event) => {
     formSubmitButton.disabled = true;
     formSubmitButton.textContent = 'Sending…';
   }
-  
+
   if (formStatus) {
     formStatus.textContent = '';
     formStatus.style.color = 'inherit';
   }
-  
+
   const formData = new FormData(contactForm);
+  const endpoint = contactForm.dataset.endpoint || '/api/contact';
 
   try {
-    // Explicitly pointing to your new Vercel serverless function route
-    const response = await fetch('/api/contact', {
-      method: "POST",
+    const response = await fetch(endpoint, {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json"
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
       },
       body: JSON.stringify({
-        name: formData.get("name"),
-        email: formData.get("email"),
-        subject: formData.get("subject"),
-        message: formData.get("message")
-      })
+        name: formData.get('name'),
+        email: formData.get('email'),
+        subject: formData.get('subject'),
+        message: formData.get('message'),
+        company: formData.get('company'), // honeypot — real users leave this blank
+      }),
     });
 
-    const data = await response.json();
+    let data = {};
+    try {
+      data = await response.json();
+    } catch {
+      // Non-JSON response (e.g. a 404 HTML page) — fall through to the generic error below.
+    }
 
     if (!response.ok) {
-      throw new Error(data.error || "Failed to send payload to microservice");
+      throw new Error(data.error || 'Failed to send your message.');
     }
 
     // Success state
     contactForm.reset();
     if (formStatus) {
-      formStatus.textContent = "Message sent—thanks for reaching out.";
-      formStatus.style.color = '#4caf50'; // Green success text
+      formStatus.textContent = 'Message sent—thanks for reaching out.';
+      formStatus.style.color = '#4caf50';
     }
-
   } catch (error) {
-    // Error state
-    console.error('Microservice Error:', error);
+    console.error('Contact form error:', error);
     if (formStatus) {
-      formStatus.textContent = "Unable to send right now. Please use the email link above.";
-      formStatus.style.color = '#f44336'; // Red error text
+      formStatus.textContent = error.message || 'Unable to send right now. Please use the email link above.';
+      formStatus.style.color = '#f44336';
     }
   } finally {
-    // This ALWAYS runs, ensuring the button resets whether it succeeded or failed
     if (formSubmitButton) {
       formSubmitButton.disabled = false;
       formSubmitButton.innerHTML = originalLabel;
     }
   }
 });
-// --- END UPDATED CONTACT FORM LOGIC ---
-// --- END UPDATED CONTACT FORM LOGIC ---
+// --- END CONTACT FORM LOGIC ---
 
 const caseStudies = {
   career: {
@@ -286,4 +287,4 @@ document.addEventListener('keydown', (event) => {
     event.preventDefault();
     first.focus();
   }
-})
+});
